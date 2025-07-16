@@ -1,0 +1,44 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports: 
+      - "27017:27017"
+    restart: always
+  mongo_seed:
+    image: mongodb/mongodb-community-server:6.0-ubi8
+    depends_on:
+      - mongo
+    volumes:
+      - ./mongo-init:/mongo-init
+      - ./backend/data:/data
+    entrypoint: [ 
+      "/mongo-init/migrate.sh", "mongo", "27017", "--", "mongoimport",
+      "--host", "mongo","--db", "wanderlust", "--collection", "posts",
+      "--file", "/data/sample_posts.json","--jsonArray"
+    ]
+    restart: no
+  redis: 
+    image: redis:latest
+    container_name: redis-cache
+    ports: 
+      - "6379:6379"
+    restart: always
+  
+  frontend:
+    image: 864899848137.dkr.ecr.us-east-1.amazonaws.com/wanderlust/frontend:latest
+    container_name: frontend
+    ports: 
+      - "5173:5173"
+    restart: always
+    env_file: 
+      - path: ./frontend/.env.sample
+
+  backend: 
+    image: 864899848137.dkr.ecr.us-east-1.amazonaws.com/wanderlust/backend:latest
+    container_name: backend
+    ports: 
+      - "8080:8080"
+    restart: always
+    env_file: 
+      - path: ./backend/.env.sample
